@@ -1,4 +1,3 @@
-// import 'bootstrap/js/dist/util.js';
-import fn from './file.js';
-
-console.log(fn());
+import '../node_modules/bootstrap/dist/js/bootstrap.js';
+import './styles.scss';
+// import fn from './file.js';
