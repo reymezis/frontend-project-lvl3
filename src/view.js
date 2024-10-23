@@ -1,4 +1,4 @@
-const handleProcessState = (elements, value, previousValue) => {
+const handleProcessState = (elements, value, previousValue, i18nInstance) => {
   if (previousValue === 'invalid') {
     elements.feedback.classList.remove('text-danger');
     elements.input.classList.remove('is-invalid');
@@ -6,7 +6,7 @@ const handleProcessState = (elements, value, previousValue) => {
 
   if (value === 'valid') {
     elements.feedback.classList.add('text-success');
-    elements.feedback.textContent = 'RSS успешно загружен';
+    elements.feedback.textContent = i18nInstance.t('validation.successMessage');
     elements.form.reset();
     elements.input.focus();
   }
@@ -17,20 +17,20 @@ const handleProcessState = (elements, value, previousValue) => {
   }
 };
 
-const handleProcessError = (elements, value) => {
+const handleProcessError = (elements, value, i18nInstance) => {
   if (value !== null) {
-    elements.feedback.textContent = value;
+    elements.feedback.textContent = i18nInstance.t(`validation.errors.${value}`);
   }
 };
 
-export default (elements) => (path, value, previousValue) => {
+export default (elements, i18nInstance) => (path, value, previousValue) => {
   switch (path) {
     case 'formState':
-      handleProcessState(elements, value, previousValue);
+      handleProcessState(elements, value, previousValue, i18nInstance);
       break;
 
     case 'error':
-      handleProcessError(elements, value);
+      handleProcessError(elements, value, i18nInstance);
       break;
 
     default:
