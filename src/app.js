@@ -15,7 +15,7 @@ const getParsedData = (response) => {
 
 const getTagContent = (node) => (node.textContent.trim());
 
-const buildPosts = (items, feedId) => {
+const buildPosts = (items, feedId, url) => {
   const posts = [];
   items.forEach((item) => {
     const post = {
@@ -24,6 +24,7 @@ const buildPosts = (items, feedId) => {
       title: '',
       link: '',
       description: '',
+      source: url,
     };
     Array.from(item.children)
       .forEach((el) => {
@@ -40,6 +41,31 @@ const buildPosts = (items, feedId) => {
     posts.push(post);
   });
   return posts;
+};
+
+const getRssData = (url) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+  .then((response) => {
+    const parsed = getParsedData(response);
+    const content = parsed.querySelector('channel').children;
+    return content;
+  })
+  .catch((err) => {
+    throw new Error(err);
+  });
+
+const getNewPosts = (state, url) => {
+  getRssData(url).then((newContent) => {
+    const [, ...items] = newContent;
+    const postsItems = items.filter((el) => el.tagName === 'item');
+    const oldPosts = state.posts.filter(({ source }) => source === url);
+    const feed = state.feeds.filter(({ source }) => source === url);
+    const [{ feedId }] = feed;
+    const posts = buildPosts(postsItems, feedId, url);
+    const uniq = _.pullAllBy(posts, oldPosts, 'title');
+    state.posts = [...state.posts, ...uniq];
+  }).catch((err) => {
+    throw new Error(err);
+  });
 };
 
 export default async () => {
@@ -85,6 +111,16 @@ export default async () => {
   // VIEW
   const state = onChange(initialState, render(elements, i18nInstance, initialState));
 
+  const checkNewNews = () => {
+    if (state.rssList.length !== 0) {
+      state.rssList.forEach((url) => {
+        getNewPosts(state, url);
+      });
+    }
+    setTimeout(checkNewNews, 5000);
+  };
+  checkNewNews();
+
   // CONTROLLER
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -103,20 +139,19 @@ export default async () => {
         state.formState = 'valid';
         state.error = null;
         state.rssList.push(value.url);
-        axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(enteredValue)}`)
-          .then((response) => {
-            const parsed = getParsedData(response);
-            const content = parsed.querySelector('channel').children;
+        getRssData(enteredValue)
+          .then((content) => {
             const [title, description, ...items] = content;
             const feedId = _.uniqueId();
             const feedObj = {
               feedId,
               title: getTagContent(title),
               description: getTagContent(description),
+              source: enteredValue,
             };
             state.feeds.push(feedObj);
             const postsItems = items.filter((el) => el.tagName === 'item');
-            const posts = buildPosts(postsItems, feedId);
+            const posts = buildPosts(postsItems, feedId, enteredValue);
             state.posts = [...state.posts, ...posts];
           })
           .catch((err) => {
