@@ -25,6 +25,7 @@ const buildPosts = (items, feedId, url) => {
       link: '',
       description: '',
       source: url,
+      isRead: 'unread',
     };
     Array.from(item.children)
       .forEach((el) => {
@@ -77,6 +78,9 @@ export default async () => {
     posts: [],
     feeds: [],
     modal: null,
+    readState: {
+      posts: [],
+    },
   };
 
   const elements = {
@@ -168,9 +172,17 @@ export default async () => {
   elements.posts.addEventListener('click', (e) => {
     e.preventDefault();
     const element = e.target;
+
     if (element.matches('button')) {
       const id = element.getAttribute('data-id');
+      const currentPost = state.posts.filter(({ postId }) => postId === id);
+      const [postObj] = currentPost;
+      postObj.isRead = 'read';
+
+      const postInfo = { id, isRead: 'read' };
+
       state.modal = id;
+      state.readState.posts.push(postInfo);
     }
   });
 };

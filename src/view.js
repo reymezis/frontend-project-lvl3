@@ -57,11 +57,13 @@ const handleProcessPosts = (elements, initialState) => {
     <ul class="list-group border-0 rounded-0 list-unstyled"></ul>
   </div>`;
   const ul = document.querySelector('.posts > div > ul');
-  initialState.posts.forEach(({ postId, title, link }) => {
+  initialState.posts.forEach(({
+    postId, title, link, isRead,
+  }) => {
     const li = document.createElement('li');
     ul.append(li);
     li.outerHTML = `<li class="list-group-item d-flex justify-content-between align-items-start border-0 border-end-0">
-      <a href=${link} class="fw-bold" data-id=${postId} target="_blank" rel="noopener noreferrer">${title}</a>
+      <a href=${link} class="${isRead === 'read' ? 'fw-normal' : 'fw-bold'}" data-id=${postId} target="_blank" rel="noopener noreferrer">${title}</a>
       <button type="button" class="btn btn-outline-primary btn-sm" data-id=${postId} data-bs-toggle="modal" data-bs-target="#modal">Просмотр</button>
     </li>`;
   });
@@ -79,6 +81,13 @@ const handleProcessModal = (value, initialState) => {
   modalBody.textContent = description;
   const linkModal = modal.querySelector('.modal-footer > a');
   linkModal.setAttribute('href', link);
+};
+
+const handleProcessReadPosts = (value) => {
+  const [{ id }] = value;
+  const title = document.querySelector(`a[data-id="${id}"]`);
+  title.classList.remove('fw-bold');
+  title.classList.add('fw-normal');
 };
 
 export default (elements, i18nInstance, initialState) => (path, value, previousValue) => {
@@ -101,6 +110,10 @@ export default (elements, i18nInstance, initialState) => (path, value, previousV
 
     case 'modal':
       handleProcessModal(value, initialState);
+      break;
+
+    case 'readState.posts':
+      handleProcessReadPosts(value);
       break;
 
     default:
