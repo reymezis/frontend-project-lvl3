@@ -44,7 +44,7 @@ const buildPosts = (items, feedId, url) => {
   return posts;
 };
 
-const getRssData = (url, state) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+const getRssData = (url, state) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`, { timeout: 5000 })
   .then((response) => {
     const parsed = getParsedData(response);
     const content = parsed.querySelector('channel').children;
