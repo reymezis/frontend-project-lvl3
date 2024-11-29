@@ -46,7 +46,7 @@ const handleProcessFeeds = (elements, initialState) => {
   elements.input.focus();
 };
 
-const handleProcessPosts = (elements, initialState) => {
+const handleProcessPosts = (elements, initialState, i18nInstance) => {
   elements.posts.textContent = '';
   const postsContent = document.createElement('div');
   elements.posts.append(postsContent);
@@ -64,7 +64,7 @@ const handleProcessPosts = (elements, initialState) => {
     ul.append(li);
     li.outerHTML = `<li class="list-group-item d-flex justify-content-between align-items-start border-0 border-end-0">
       <a href=${link} class="${isRead === 'read' ? 'fw-normal' : 'fw-bold'}" data-id=${postId} target="_blank" rel="noopener noreferrer">${title}</a>
-      <button type="button" class="btn btn-outline-primary btn-sm" data-id=${postId} data-bs-toggle="modal" data-bs-target="#modal">Просмотр</button>
+      <button type="button" class="btn btn-outline-primary btn-sm" data-id=${postId} data-bs-toggle="modal" data-bs-target="#modal">${i18nInstance.t('buttons')}</button>
     </li>`;
   });
   elements.form.reset();
@@ -90,6 +90,19 @@ const handleProcessReadPosts = (value) => {
   title.classList.add('fw-normal');
 };
 
+const handleProcessNetworkError = (elements, value, i18nInstance) => {
+  if (value !== null) {
+    const feedbackClasslist = elements.feedback.classList;
+    if (feedbackClasslist.contains('text-success')) {
+      feedbackClasslist.remove('text-success');
+    }
+    if (!feedbackClasslist.contains('text-danger')) {
+      elements.feedback.classList.add('text-danger');
+    }
+    elements.feedback.textContent = i18nInstance.t('network');
+  }
+};
+
 export default (elements, i18nInstance, initialState) => (path, value, previousValue) => {
   switch (path) {
     case 'formState':
@@ -105,7 +118,7 @@ export default (elements, i18nInstance, initialState) => (path, value, previousV
       break;
 
     case 'posts':
-      handleProcessPosts(elements, initialState);
+      handleProcessPosts(elements, initialState, i18nInstance);
       break;
 
     case 'modal':
@@ -114,6 +127,10 @@ export default (elements, i18nInstance, initialState) => (path, value, previousV
 
     case 'readState.posts':
       handleProcessReadPosts(value);
+      break;
+
+    case 'network':
+      handleProcessNetworkError(elements, value, i18nInstance);
       break;
 
     default:

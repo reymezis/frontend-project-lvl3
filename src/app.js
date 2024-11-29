@@ -44,18 +44,19 @@ const buildPosts = (items, feedId, url) => {
   return posts;
 };
 
-const getRssData = (url) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+const getRssData = (url, state) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
   .then((response) => {
     const parsed = getParsedData(response);
     const content = parsed.querySelector('channel').children;
     return content;
   })
   .catch((err) => {
+    state.network = err.code;
     throw new Error(err);
   });
 
 const getNewPosts = (state, url) => {
-  getRssData(url).then((newContent) => {
+  getRssData(url, state).then((newContent) => {
     const [, ...items] = newContent;
     const postsItems = items.filter((el) => el.tagName === 'item');
     const oldPosts = state.posts.filter(({ source }) => source === url);
@@ -69,6 +70,28 @@ const getNewPosts = (state, url) => {
   });
 };
 
+const isUrl = (str) => {
+  const regex = /^(http(s):\/\/.)[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$/;
+  const checkUrl = new RegExp(regex);
+  return checkUrl.test(str);
+};
+
+const isRssUrl = (url) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+  .then((data) => {
+    const contentType = data.headers.get('Content-Type');
+    if (contentType && (contentType.includes('application/rss+xml') || contentType.includes('application/xml'))) {
+      return true;
+    }
+    const text = data.data.contents;
+    if (text.includes('<rss') || text.includes('<feed')) {
+      return true;
+    }
+    return false;
+  })
+  .catch((err) => {
+    throw new Error(err);
+  });
+
 export default async () => {
   // MODEL
   const initialState = {
@@ -81,6 +104,7 @@ export default async () => {
     readState: {
       posts: [],
     },
+    network: null,
   };
 
   const elements = {
@@ -105,6 +129,7 @@ export default async () => {
       yup.setLocale({
         string: {
           url: () => ({ key: 'url' }),
+          required: () => ({ key: 'required' }),
         },
         mixed: {
           notOneOf: () => ({ key: 'notOneOf' }),
@@ -134,8 +159,10 @@ export default async () => {
 
     const schema = yup.object().shape({
       url: yup.string()
+        .test('rss', (url) => (isUrl(url) ? (isRssUrl(url).then((answer) => (answer))) : true))
         .url()
-        .notOneOf(Object.values(state.rssList)),
+        .notOneOf(Object.values(state.rssList))
+        .required(),
     });
 
     schema.validate({ url: enteredValue }, { abortEarly: false })
@@ -143,7 +170,7 @@ export default async () => {
         state.formState = 'valid';
         state.error = null;
         state.rssList.push(value.url);
-        getRssData(enteredValue)
+        getRssData(enteredValue, state)
           .then((content) => {
             const [title, description, ...items] = content;
             const feedId = _.uniqueId();
@@ -163,8 +190,11 @@ export default async () => {
           });
       })
       .catch((err) => {
-        const errObj = err.message;
-        state.error = errObj.key;
+        if (err && err.inner) {
+          err.inner.forEach((error) => {
+            state.error = error.type;
+          });
+        }
         state.formState = 'invalid';
       });
   });
