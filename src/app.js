@@ -6,6 +6,9 @@ import _ from 'lodash';
 import render from './view.js';
 import resources from './locales/ru.js';
 
+const timeoutRequest = 5000;
+axios.defaults.timeout = timeoutRequest;
+
 const getParsedData = (response) => {
   const parser = new DOMParser();
   const data = response.data.contents;
@@ -44,7 +47,7 @@ const buildPosts = (items, feedId, url) => {
   return posts;
 };
 
-const getRssData = (url, state) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`, { timeout: 5000 })
+const getRssData = (url, state) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
   .then((response) => {
     const parsed = getParsedData(response);
     const content = parsed.querySelector('channel').children;
@@ -190,6 +193,9 @@ export default async () => {
           });
       })
       .catch((err) => {
+        if (err.message.includes('5000ms')) {
+          state.network = 'timeoutErr';
+        }
         if (err && err.inner) {
           err.inner.forEach((error) => {
             state.error = error.type;
