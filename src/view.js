@@ -90,19 +90,6 @@ const handleProcessReadPosts = (value) => {
   title.classList.add('fw-normal');
 };
 
-const handleProcessNetworkError = (elements, value, i18nInstance) => {
-  if (value !== null) {
-    const feedbackClasslist = elements.feedback.classList;
-    if (feedbackClasslist.contains('text-success')) {
-      feedbackClasslist.remove('text-success');
-    }
-    if (!feedbackClasslist.contains('text-danger')) {
-      elements.feedback.classList.add('text-danger');
-    }
-    elements.feedback.textContent = i18nInstance.t('network');
-  }
-};
-
 export default (elements, i18nInstance, initialState) => (path, value, previousValue) => {
   switch (path) {
     case 'formState':
@@ -127,10 +114,6 @@ export default (elements, i18nInstance, initialState) => (path, value, previousV
 
     case 'readState.posts':
       handleProcessReadPosts(value);
-      break;
-
-    case 'network':
-      handleProcessNetworkError(elements, value, i18nInstance);
       break;
 
     default:

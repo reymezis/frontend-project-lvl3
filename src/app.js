@@ -47,19 +47,18 @@ const buildPosts = (items, feedId, url) => {
   return posts;
 };
 
-const getRssData = (url, state) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+const getRssData = (url) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
   .then((response) => {
     const parsed = getParsedData(response);
     const content = parsed.querySelector('channel').children;
     return content;
   })
   .catch((err) => {
-    state.network = err.code;
     throw new Error(err);
   });
 
 const getNewPosts = (state, url) => {
-  getRssData(url, state).then((newContent) => {
+  getRssData(url).then((newContent) => {
     const [, ...items] = newContent;
     const postsItems = items.filter((el) => el.tagName === 'item');
     const oldPosts = state.posts.filter(({ source }) => source === url);
@@ -107,7 +106,6 @@ export default async () => {
     readState: {
       posts: [],
     },
-    network: null,
   };
 
   const elements = {
@@ -173,35 +171,40 @@ export default async () => {
         state.formState = 'valid';
         state.error = null;
         state.rssList.push(value.url);
-        getRssData(enteredValue, state)
-          .then((content) => {
-            const [title, description, ...items] = content;
-            const feedId = _.uniqueId();
-            const feedObj = {
-              feedId,
-              title: getTagContent(title),
-              description: getTagContent(description),
-              source: enteredValue,
-            };
-            state.feeds.push(feedObj);
-            const postsItems = items.filter((el) => el.tagName === 'item');
-            const posts = buildPosts(postsItems, feedId, enteredValue);
-            state.posts = [...state.posts, ...posts];
-          })
-          .catch((err) => {
-            throw new Error(err);
-          });
+        return enteredValue;
       })
       .catch((err) => {
-        if (err.message.includes('5000ms')) {
-          state.network = 'timeoutErr';
+        state.formState = 'invalid';
+
+        if (typeof err.message === 'string' && err.message.includes('AxiosError')) {
+          state.error = 'network';
         }
         if (err && err.inner) {
           err.inner.forEach((error) => {
             state.error = error.type;
           });
         }
-        state.formState = 'invalid';
+      })
+      .then((url) => getRssData(url))
+      .catch((err) => {
+        throw new Error(err);
+      })
+      .then((content) => {
+        const [title, description, ...items] = content;
+        const feedId = _.uniqueId();
+        const feedObj = {
+          feedId,
+          title: getTagContent(title),
+          description: getTagContent(description),
+          source: enteredValue,
+        };
+        state.feeds.push(feedObj);
+        const postsItems = items.filter((el) => el.tagName === 'item');
+        const posts = buildPosts(postsItems, feedId, enteredValue);
+        state.posts = [...state.posts, ...posts];
+      })
+      .catch((err) => {
+        throw new Error(err);
       });
   });
 
