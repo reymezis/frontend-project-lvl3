@@ -29,8 +29,8 @@ module.exports = {
   },
   resolve: {
     alias: {
-      bootstrap: path.resolve(__dirname, 'node_modules/bootstrap')
-    }
+      bootstrap: path.resolve(__dirname, 'node_modules/bootstrap'),
+    },
   },
   plugins: [
     new HtmlWebpackPlugin({
