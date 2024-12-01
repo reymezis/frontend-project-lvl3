@@ -6,7 +6,7 @@ const handleProcessState = (elements, value, previousValue, i18nInstance) => {
 
   if (value === 'valid') {
     elements.feedback.classList.add('text-success');
-    elements.feedback.textContent = i18nInstance.t('validation.successMessage');
+    elements.feedback.replaceChildren(i18nInstance.t('validation.successMessage'));
     elements.form.reset();
     elements.input.focus();
   }
@@ -19,14 +19,14 @@ const handleProcessState = (elements, value, previousValue, i18nInstance) => {
 
 const handleProcessError = (elements, value, i18nInstance) => {
   if (value !== null) {
-    elements.feedback.textContent = i18nInstance.t(`validation.errors.${value}`);
+    elements.feedback.replaceChildren(i18nInstance.t(`validation.errors.${value}`));
   }
 };
 
 const handleProcessFeeds = (elements, initialState) => {
-  elements.feeds.textContent = '';
+  elements.feeds.replaceChildren();
   const feedsContent = document.createElement('div');
-  elements.feeds.append(feedsContent);
+  elements.feeds.replaceChildren(feedsContent);
   feedsContent.outerHTML = `<div class="card border-0">
         <div class="card-body">
           <h2 class="card-title h4">Фиды</h2>
@@ -47,7 +47,7 @@ const handleProcessFeeds = (elements, initialState) => {
 };
 
 const handleProcessPosts = (elements, initialState, i18nInstance) => {
-  elements.posts.textContent = '';
+  elements.posts.replaceChildren();
   const postsContent = document.createElement('div');
   elements.posts.append(postsContent);
   postsContent.outerHTML = `<div class="card border-0">

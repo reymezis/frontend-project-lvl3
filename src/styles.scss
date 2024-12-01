@@ -1,15 +1,15 @@
-@import "~bootstrap/functions";
-@import "~bootstrap/variables";
-@import "~bootstrap/mixins";
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
 
-@import '~bootstrap/bootstrap-reboot';
-@import '~bootstrap/bootstrap-grid';
-@import '~bootstrap/bootstrap-utilities';
-@import '~bootstrap/accordion';
-@import '~bootstrap/modal';
-@import '~bootstrap/forms';
-@import '~bootstrap/buttons';
-@import '~bootstrap/type';
+@import 'bootstrap/scss/bootstrap-reboot';
+@import 'bootstrap/scss/bootstrap-grid';
+@import 'bootstrap/scss/bootstrap-utilities';
+@import 'bootstrap/scss/accordion';
+@import 'bootstrap/scss/modal';
+@import 'bootstrap/scss/forms';
+@import 'bootstrap/scss/buttons';
+@import 'bootstrap/scss/type';
 
 .text-body-secondary {
   --bs-text-opacity: 1;

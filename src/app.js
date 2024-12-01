@@ -66,7 +66,7 @@ const getNewPosts = (state, url) => {
     const [{ feedId }] = feed;
     const posts = buildPosts(postsItems, feedId, url);
     const uniq = _.pullAllBy(posts, oldPosts, 'title');
-    state.posts = [...state.posts, ...uniq];
+    state.posts.push(uniq);
   }).catch((err) => {
     throw new Error(err);
   });
