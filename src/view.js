@@ -90,6 +90,16 @@ const handleProcessReadPosts = (value) => {
   title.classList.add('fw-normal');
 };
 
+const handleSubmitButton = (value, elements) => {
+  const button = elements.form.querySelector('button');
+  if (value === 'disabled') {
+    button.disabled = true;
+  }
+  if (value === 'enabled') {
+    button.disabled = false;
+  }
+};
+
 export default (elements, i18nInstance, initialState) => (path, value, previousValue) => {
   switch (path) {
     case 'formState':
@@ -114,6 +124,10 @@ export default (elements, i18nInstance, initialState) => (path, value, previousV
 
     case 'readState.posts':
       handleProcessReadPosts(value);
+      break;
+
+    case 'buttonState':
+      handleSubmitButton(value, elements);
       break;
 
     default:

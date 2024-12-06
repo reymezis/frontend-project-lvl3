@@ -5,86 +5,55 @@ import axios from 'axios';
 import _ from 'lodash';
 import render from './view.js';
 import resources from './locales/ru.js';
+import getParsedRssData from './parser.js';
 
 const timeoutRequest = 5000;
 axios.defaults.timeout = timeoutRequest;
 
-const getParsedData = (response) => {
-  const parser = new DOMParser();
-  const data = response.data.contents;
-  const parsedData = parser.parseFromString(data, 'application/xml');
-  return parsedData;
+const getRssData = (url) => {
+  const params = new URLSearchParams({ disableCache: 'true', url });
+  const urlWithProxy = new URL(`https://allorigins.hexlet.app/get?${params}`);
+  return axios.get(urlWithProxy)
+    .then((response) => response)
+    .catch((err) => {
+      throw new Error(err);
+    });
 };
-
-const getTagContent = (node) => (node.textContent.trim());
-
-const buildPosts = (items, feedId, url) => {
-  const posts = [];
-  items.forEach((item) => {
-    const post = {
-      feedId,
-      postId: _.uniqueId(),
-      title: '',
-      link: '',
-      description: '',
-      source: url,
-      isRead: 'unread',
-    };
-    Array.from(item.children)
-      .forEach((el) => {
-        if (el.tagName === 'title') {
-          post.title = getTagContent(el);
-        }
-        if (el.tagName === 'link') {
-          post.link = getTagContent(el);
-        }
-        if (el.tagName === 'description') {
-          post.description = getTagContent(el);
-        }
-      });
-    posts.push(post);
-  });
-  return posts;
-};
-
-const getRssData = (url) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
-  .then((response) => {
-    const parsed = getParsedData(response);
-    const content = parsed.querySelector('channel').children;
-    return content;
-  })
-  .catch((err) => {
-    throw new Error(err);
-  });
 
 const getNewPosts = (state, url) => {
-  getRssData(url).then((newContent) => {
-    const [, ...items] = newContent;
-    const postsItems = items.filter((el) => el.tagName === 'item');
-    const oldPosts = state.posts.filter(({ source }) => source === url);
-    const feed = state.feeds.filter(({ source }) => source === url);
-    const [{ feedId }] = feed;
-    const posts = buildPosts(postsItems, feedId, url);
-    const uniq = _.pullAllBy(posts, oldPosts, 'title');
-    state.posts.push(uniq);
-  }).catch((err) => {
-    throw new Error(err);
-  });
+  getRssData(url)
+    .then((response) => {
+      const parsedData = getParsedRssData(response);
+
+      const oldPosts = state.posts.filter(({ source }) => source === url);
+      const feed = state.feeds.filter(({ source }) => source === url);
+      const [{ feedId }] = feed;
+
+      const newposts = parsedData.posts.map((post) => {
+        post.feedId = feedId;
+        post.postId = _.uniqueId();
+        post.source = url;
+        post.isRead = 'unread';
+        return post;
+      });
+
+      const uniq = _.pullAllBy(newposts, oldPosts, 'title');
+      if (uniq.length !== 0) {
+        state.posts = [...state.posts, ...uniq];
+      }
+    })
+    .catch((err) => {
+      throw new Error(err);
+    });
 };
 
-const isUrl = (str) => {
-  const regex = /^(http(s):\/\/.)[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$/;
-  const checkUrl = new RegExp(regex);
-  return checkUrl.test(str);
-};
-
-const isRssUrl = (url) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
-  .then((data) => {
-    const contentType = data.headers.get('Content-Type');
+const isRssUrl = (url) => getRssData(url)
+  .then((response) => {
+    const contentType = response.headers.get('Content-Type');
     if (contentType && (contentType.includes('application/rss+xml') || contentType.includes('application/xml'))) {
       return true;
     }
-    const text = data.data.contents;
+    const text = response.data.contents;
     if (text.includes('<rss') || text.includes('<feed')) {
       return true;
     }
@@ -97,7 +66,7 @@ const isRssUrl = (url) => axios.get(`https://allorigins.hexlet.app/get?disableCa
 export default async () => {
   // MODEL
   const initialState = {
-    formState: null,
+    formState: false,
     error: null,
     rssList: [],
     posts: [],
@@ -106,6 +75,7 @@ export default async () => {
     readState: {
       posts: [],
     },
+    buttonState: 'enabled',
   };
 
   const elements = {
@@ -155,15 +125,23 @@ export default async () => {
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
 
+    state.buttonState = 'disabled';
+
     const formData = new FormData(e.target);
     const enteredValue = formData.get('url').trim();
 
     const schema = yup.object().shape({
       url: yup.string()
-        .test('rss', (url) => (isUrl(url) ? (isRssUrl(url).then((answer) => (answer))) : true))
         .url()
-        .notOneOf(Object.values(state.rssList))
-        .required(),
+        .required()
+        .test('rss', (url) => {
+          let isUrl = false;
+          if (url) {
+            isUrl = yup.string().url().isValidSync(url);
+          }
+          return isUrl ? (isRssUrl(url).then((result) => result)) : true;
+        })
+        .notOneOf(Object.values(state.rssList)),
     });
 
     schema.validate({ url: enteredValue }, { abortEarly: false })
@@ -179,29 +157,36 @@ export default async () => {
         if (typeof err.message === 'string' && err.message.includes('AxiosError')) {
           state.error = 'network';
         }
+
         if (err && err.inner) {
           err.inner.forEach((error) => {
             state.error = error.type;
           });
         }
+
+        state.buttonState = 'enabled';
+        throw new Error(err);
       })
       .then((url) => getRssData(url))
       .catch((err) => {
         throw new Error(err);
       })
-      .then((content) => {
-        const [title, description, ...items] = content;
+      .then((response) => {
+        const parsedData = getParsedRssData(response);
+        const feed = parsedData.feedObj;
         const feedId = _.uniqueId();
-        const feedObj = {
-          feedId,
-          title: getTagContent(title),
-          description: getTagContent(description),
-          source: enteredValue,
-        };
-        state.feeds.push(feedObj);
-        const postsItems = items.filter((el) => el.tagName === 'item');
-        const posts = buildPosts(postsItems, feedId, enteredValue);
+        feed.feedId = feedId;
+        feed.source = enteredValue;
+        state.feeds.push(feed);
+
+        const posts = parsedData.posts
+          .map((post) => ({
+            ...post, feedId, postId: _.uniqueId(), source: enteredValue, isRead: 'unread',
+          }));
+
         state.posts = [...state.posts, ...posts];
+
+        state.buttonState = 'enabled';
       })
       .catch((err) => {
         throw new Error(err);
@@ -214,9 +199,11 @@ export default async () => {
 
     if (element.matches('button')) {
       const id = element.getAttribute('data-id');
-      const currentPost = state.posts.filter(({ postId }) => postId === id);
-      const [postObj] = currentPost;
-      postObj.isRead = 'read';
+      state.posts.forEach((post) => {
+        if (post.postId === id) {
+          post.isRead = 'read';
+        }
+      });
 
       const postInfo = { id, isRead: 'read' };
 
