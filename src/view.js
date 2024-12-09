@@ -83,11 +83,12 @@ const handleProcessModal = (value, initialState) => {
   linkModal.setAttribute('href', link);
 };
 
-const handleProcessReadPosts = (value) => {
-  const [{ id }] = value;
-  const title = document.querySelector(`a[data-id="${id}"]`);
-  title.classList.remove('fw-bold');
-  title.classList.add('fw-normal');
+const handleProcessReadPosts = (initialState) => {
+  initialState.readState.posts.forEach(({ id }) => {
+    const title = document.querySelector(`a[data-id="${id}"]`);
+    title.classList.remove('fw-bold');
+    title.classList.add('fw-normal');
+  });
 };
 
 const handleSubmitButton = (value, elements) => {
@@ -123,7 +124,7 @@ export default (elements, i18nInstance, initialState) => (path, value, previousV
       break;
 
     case 'readState.posts':
-      handleProcessReadPosts(value);
+      handleProcessReadPosts(initialState);
       break;
 
     case 'buttonState':

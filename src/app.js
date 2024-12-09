@@ -29,17 +29,13 @@ const getNewPosts = (state, url) => {
       const feed = state.feeds.filter(({ source }) => source === url);
       const [{ feedId }] = feed;
 
-      const newposts = parsedData.posts.map((post) => {
-        post.feedId = feedId;
-        post.postId = _.uniqueId();
-        post.source = url;
-        post.isRead = 'unread';
-        return post;
-      });
+      const newposts = parsedData.posts.map((post) => ({
+        ...post, feedId, postId: _.uniqueId(), source: url, isRead: 'unread',
+      }));
 
       const uniq = _.pullAllBy(newposts, oldPosts, 'title');
-      if (uniq.length !== 0) {
-        state.posts = [...state.posts, ...uniq];
+      if (uniq) {
+        uniq.forEach((el) => state.posts.push(el));
       }
     })
     .catch((err) => {
@@ -199,14 +195,7 @@ export default async () => {
 
     if (element.matches('button')) {
       const id = element.getAttribute('data-id');
-      state.posts.forEach((post) => {
-        if (post.postId === id) {
-          post.isRead = 'read';
-        }
-      });
-
       const postInfo = { id, isRead: 'read' };
-
       state.modal = id;
       state.readState.posts.push(postInfo);
     }
