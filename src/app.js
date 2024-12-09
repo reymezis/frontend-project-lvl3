@@ -30,7 +30,7 @@ const getNewPosts = (state, url) => {
       const [{ feedId }] = feed;
 
       const newposts = parsedData.posts.map((post) => ({
-        ...post, feedId, postId: _.uniqueId(), source: url, isRead: 'unread',
+        ...post, feedId, postId: _.uniqueId(), source: url,
       }));
 
       const uniq = _.pullAllBy(newposts, oldPosts, 'title');
@@ -177,7 +177,7 @@ export default async () => {
 
         const posts = parsedData.posts
           .map((post) => ({
-            ...post, feedId, postId: _.uniqueId(), source: enteredValue, isRead: 'unread',
+            ...post, feedId, postId: _.uniqueId(), source: enteredValue,
           }));
 
         state.posts = [...state.posts, ...posts];

@@ -58,17 +58,15 @@ const handleProcessPosts = (elements, initialState, i18nInstance) => {
   </div>`;
   const ul = document.querySelector('.posts > div > ul');
   initialState.posts.forEach(({
-    postId, title, link, isRead,
+    postId, title, link,
   }) => {
     const li = document.createElement('li');
     ul.append(li);
     li.outerHTML = `<li class="list-group-item d-flex justify-content-between align-items-start border-0 border-end-0">
-      <a href=${link} class="${isRead === 'read' ? 'fw-normal' : 'fw-bold'}" data-id=${postId} target="_blank" rel="noopener noreferrer">${title}</a>
+      <a href=${link} class="fw-bold" data-id=${postId} target="_blank" rel="noopener noreferrer">${title}</a>
       <button type="button" class="btn btn-outline-primary btn-sm" data-id=${postId} data-bs-toggle="modal" data-bs-target="#modal">${i18nInstance.t('buttons')}</button>
     </li>`;
   });
-  elements.form.reset();
-  elements.input.focus();
 };
 
 const handleProcessModal = (value, initialState) => {
@@ -81,9 +79,6 @@ const handleProcessModal = (value, initialState) => {
   modalBody.textContent = description;
   const linkModal = modal.querySelector('.modal-footer > a');
   linkModal.setAttribute('href', link);
-  const button = modal.querySelector('.modal-header > button');
-  button.classList.add('btn-close', 'close');
-  console.log('button', button);
 };
 
 const handleProcessReadPosts = (initialState) => {
@@ -120,6 +115,7 @@ export default (elements, i18nInstance, initialState) => (path, value, previousV
 
     case 'posts':
       handleProcessPosts(elements, initialState, i18nInstance);
+      handleProcessReadPosts(initialState);
       break;
 
     case 'modal':
