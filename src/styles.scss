@@ -10,10 +10,10 @@
 @import 'bootstrap/scss/forms';
 @import 'bootstrap/scss/buttons';
 @import 'bootstrap/scss/type';
+@import 'bootstrap/dist/css/bootstrap';
 
-.text-body-secondary {
-  --bs-text-opacity: 1;
-  color: #6c757d !important;
+.text-body-gray {
+  color:  var(--bs-gray);
 }
 
 .is-invalid {

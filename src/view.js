@@ -81,6 +81,9 @@ const handleProcessModal = (value, initialState) => {
   modalBody.textContent = description;
   const linkModal = modal.querySelector('.modal-footer > a');
   linkModal.setAttribute('href', link);
+  const button = modal.querySelector('.modal-header > button');
+  button.classList.add('btn-close', 'close');
+  console.log('button', button);
 };
 
 const handleProcessReadPosts = (initialState) => {
