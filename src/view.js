@@ -82,7 +82,7 @@ const handleProcessModal = (value, initialState) => {
 };
 
 const handleProcessReadPosts = (initialState) => {
-  initialState.readState.posts.forEach(({ id }) => {
+  initialState.readState.posts.forEach((id) => {
     const title = document.querySelector(`a[data-id="${id}"]`);
     title.classList.remove('fw-bold');
     title.classList.add('fw-normal');
@@ -91,17 +91,21 @@ const handleProcessReadPosts = (initialState) => {
 
 const handleSubmitButton = (value, elements) => {
   const button = elements.form.querySelector('button');
-  if (value === 'disabled') {
+  const span = elements.form.querySelector('span');
+  if (value === 'processing') {
     button.disabled = true;
+    span.classList.remove('d-none');
   }
-  if (value === 'enabled') {
+
+  if (value === 'filling') {
     button.disabled = false;
+    span.classList.add('d-none');
   }
 };
 
 export default (elements, i18nInstance, initialState) => (path, value, previousValue) => {
   switch (path) {
-    case 'formState':
+    case 'form.state':
       handleProcessState(elements, value, previousValue, i18nInstance);
       break;
 
@@ -126,7 +130,7 @@ export default (elements, i18nInstance, initialState) => (path, value, previousV
       handleProcessReadPosts(initialState);
       break;
 
-    case 'buttonState':
+    case 'form.validationState':
       handleSubmitButton(value, elements);
       break;
 

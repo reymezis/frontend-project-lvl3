@@ -14,10 +14,7 @@ const getRssData = (url) => {
   const params = new URLSearchParams({ disableCache: 'true', url });
   const urlWithProxy = new URL(`https://allorigins.hexlet.app/get?${params}`);
   return axios.get(urlWithProxy)
-    .then((response) => response)
-    .catch((err) => {
-      throw new Error(err);
-    });
+    .then((response) => response);
 };
 
 const getNewPosts = (state, url) => {
@@ -50,28 +47,45 @@ const isRssUrl = (url) => getRssData(url)
       return true;
     }
     const text = response.data.contents;
-    if (text.includes('<rss') || text.includes('<feed')) {
-      return true;
-    }
-    return false;
+    return text.includes('<rss') || text.includes('<feed');
   })
   .catch((err) => {
     throw new Error(err);
   });
 
+const initI18n = (defaultLanguage, i18nInstance) => i18nInstance
+  .init({
+    lng: defaultLanguage,
+    debug: false,
+    resources,
+  })
+  .then(() => {
+    yup.setLocale({
+      string: {
+        url: () => ({ key: 'url' }),
+        required: () => ({ key: 'required' }),
+      },
+      mixed: {
+        notOneOf: () => ({ key: 'notOneOf' }),
+      },
+    });
+  });
+
 export default async () => {
   // MODEL
   const initialState = {
-    formState: false,
+    form: {
+      state: 'initial',
+      validationState: 'filling',
+    },
     error: null,
     rssList: [],
     posts: [],
     feeds: [],
     modal: null,
     readState: {
-      posts: [],
+      posts: new Set(),
     },
-    buttonState: 'enabled',
   };
 
   const elements = {
@@ -86,26 +100,12 @@ export default async () => {
 
   const i18nInstance = i18next.createInstance();
 
-  i18nInstance
-    .init({
-      lng: defaultLanguage,
-      debug: false,
-      resources,
-    })
-    .then(() => {
-      yup.setLocale({
-        string: {
-          url: () => ({ key: 'url' }),
-          required: () => ({ key: 'required' }),
-        },
-        mixed: {
-          notOneOf: () => ({ key: 'notOneOf' }),
-        },
-      });
-    });
+  initI18n(defaultLanguage, i18nInstance);
 
   // VIEW
   const state = onChange(initialState, render(elements, i18nInstance, initialState));
+
+  const checkingInterval = 5000;
 
   const checkNewNews = () => {
     if (state.rssList.length !== 0) {
@@ -113,7 +113,7 @@ export default async () => {
         getNewPosts(state, url);
       });
     }
-    setTimeout(checkNewNews, 5000);
+    setTimeout(checkNewNews, checkingInterval);
   };
   checkNewNews();
 
@@ -121,7 +121,7 @@ export default async () => {
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    state.buttonState = 'disabled';
+    state.form.validationState = 'processing';
 
     const formData = new FormData(e.target);
     const enteredValue = formData.get('url').trim();
@@ -142,13 +142,13 @@ export default async () => {
 
     schema.validate({ url: enteredValue }, { abortEarly: false })
       .then((value) => {
-        state.formState = 'valid';
+        state.form.state = 'valid';
         state.error = null;
         state.rssList.push(value.url);
         return enteredValue;
       })
       .catch((err) => {
-        state.formState = 'invalid';
+        state.form.state = 'invalid';
 
         if (typeof err.message === 'string' && err.message.includes('AxiosError')) {
           state.error = 'network';
@@ -160,7 +160,7 @@ export default async () => {
           });
         }
 
-        state.buttonState = 'enabled';
+        state.form.validationState = 'filling';
         throw new Error(err);
       })
       .then((url) => getRssData(url))
@@ -182,9 +182,14 @@ export default async () => {
 
         state.posts = [...state.posts, ...posts];
 
-        state.buttonState = 'enabled';
+        state.form.validationState = 'filling';
       })
       .catch((err) => {
+        if (err.message === 'rss') {
+          state.form.state = 'invalid';
+          state.error = err.message;
+          state.form.validationState = 'filling';
+        }
         throw new Error(err);
       });
   });
@@ -195,9 +200,8 @@ export default async () => {
 
     if (element.matches('button')) {
       const id = element.getAttribute('data-id');
-      const postInfo = { id, isRead: 'read' };
       state.modal = id;
-      state.readState.posts.push(postInfo);
+      state.readState.posts.add(id);
     }
   });
 };

@@ -4,6 +4,10 @@ const getParsedXmlDoc = (response) => {
   const parser = new DOMParser();
   const xmlString = response.data.contents;
   const xmlDoc = parser.parseFromString(xmlString, 'application/xml');
+  const errorNode = xmlDoc.querySelector('parsererror');
+  if (errorNode) {
+    throw new Error('rss');
+  }
   return xmlDoc;
 };
 
@@ -16,28 +20,18 @@ export default (response) => {
     description: getTagContent(description),
   };
 
-  const posts = [];
-  items
+  const posts = items
     .filter((el) => el.tagName === 'item')
-    .forEach((item) => {
-      const post = {
-        title: '',
-        link: '',
-        description: '',
-      };
-      Array.from(item.children)
-        .forEach((el) => {
-          if (el.tagName === 'title') {
-            post.title = getTagContent(el);
-          }
-          if (el.tagName === 'link') {
-            post.link = getTagContent(el);
-          }
-          if (el.tagName === 'description') {
-            post.description = getTagContent(el);
-          }
-        });
-      posts.push(post);
+    .map((item) => (Array.from(item.children)))
+    .map((elements) => elements.filter((el) => el.tagName === 'title' || el.tagName === 'link' || el.tagName === 'description'))
+    .map((filtered) => {
+      const post = filtered.reduce((acc, el) => {
+        const tag = el.tagName;
+        const tagContent = getTagContent(el);
+        return { ...acc, [tag]: tagContent };
+      }, {});
+      return post;
     });
+
   return { feedObj, posts };
 };
