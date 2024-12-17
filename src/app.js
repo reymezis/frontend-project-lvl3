@@ -48,9 +48,6 @@ const isRssUrl = (url) => getRssData(url)
     }
     const text = response.data.contents;
     return text.includes('<rss') || text.includes('<feed');
-  })
-  .catch((err) => {
-    throw new Error(err);
   });
 
 const initI18n = (defaultLanguage, i18nInstance) => i18nInstance
@@ -79,7 +76,6 @@ export default async () => {
       validationState: 'filling',
     },
     error: null,
-    rssList: [],
     posts: [],
     feeds: [],
     modal: null,
@@ -108,8 +104,10 @@ export default async () => {
   const checkingInterval = 5000;
 
   const checkNewNews = () => {
-    if (state.rssList.length !== 0) {
-      state.rssList.forEach((url) => {
+    if (state.feeds.length !== 0) {
+      const links = state.feeds.map(({ source }) => (source));
+      console.log('links', links);
+      links.forEach((url) => {
         getNewPosts(state, url);
       });
     }
@@ -137,14 +135,13 @@ export default async () => {
           }
           return isUrl ? (isRssUrl(url).then((result) => result)) : true;
         })
-        .notOneOf(Object.values(state.rssList)),
+        .notOneOf(Object.values(state.feeds.map(({ source }) => (source)))),
     });
 
     schema.validate({ url: enteredValue }, { abortEarly: false })
-      .then((value) => {
+      .then(() => {
         state.form.state = 'valid';
         state.error = null;
-        state.rssList.push(value.url);
         return enteredValue;
       })
       .catch((err) => {
@@ -164,9 +161,6 @@ export default async () => {
         throw new Error(err);
       })
       .then((url) => getRssData(url))
-      .catch((err) => {
-        throw new Error(err);
-      })
       .then((response) => {
         const parsedData = getParsedRssData(response);
         const feed = parsedData.feedObj;
@@ -190,7 +184,6 @@ export default async () => {
           state.error = err.message;
           state.form.validationState = 'filling';
         }
-        throw new Error(err);
       });
   });
 

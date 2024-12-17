@@ -23,50 +23,61 @@ const handleProcessError = (elements, value, i18nInstance) => {
   }
 };
 
+const createNewElement = (tagname, attributes, text = null) => {
+  const element = document.createElement(tagname);
+  attributes.forEach(({ name, value }) => {
+    element.setAttribute(name, value);
+  });
+  if (text) {
+    element.append(text);
+  }
+  return element;
+};
+
+const buildCard = (title) => {
+  const divCard = createNewElement('div', [{ name: 'class', value: 'card border-0' }]);
+  const divBody = createNewElement('div', [{ name: 'class', value: 'card-body' }]);
+  const h2 = createNewElement('h2', [{ name: 'class', value: 'card-title h4' }], title);
+  const ul = createNewElement('ul', [{ name: 'class', value: 'list-group border-0 rounded-0 list-unstyled' }]);
+  divBody.append(h2);
+  divCard.append(divBody, ul);
+  return divCard;
+};
+
 const handleProcessFeeds = (elements, initialState) => {
   elements.feeds.replaceChildren();
-  const feedsContent = document.createElement('div');
-  elements.feeds.replaceChildren(feedsContent);
-  feedsContent.outerHTML = `<div class="card border-0">
-        <div class="card-body">
-          <h2 class="card-title h4">Фиды</h2>
-        </div>
-      <ul class="list-group border-0 rounded-0 list-unstyled"></ul>
-    </div>`;
-  const ul = document.querySelector('.feeds > div > ul');
+  const feedsCard = buildCard('Фиды');
+  const ul = feedsCard.querySelector('ul');
+
   initialState.feeds.forEach(({ title, description }) => {
-    const li = document.createElement('li');
+    const li = createNewElement('li', [{ name: 'class', value: 'list-group-item border-0 border-end-0' }]);
+    const h3 = createNewElement('h3', [{ name: 'class', value: 'h6 m-0' }], title);
+    const p = createNewElement('p', [{ name: 'class', value: 'm-0 small text-black-50' }], description);
+    li.append(h3, p);
     ul.append(li);
-    li.outerHTML = `<li class="list-group-item border-0 border-end-0">
-          <h3 class="h6 m-0">${title}</h3>
-          <p class="m-0 small text-black-50">${description}</p>
-        </li>`;
   });
+  elements.feeds.append(feedsCard);
   elements.form.reset();
   elements.input.focus();
 };
 
 const handleProcessPosts = (elements, initialState, i18nInstance) => {
   elements.posts.replaceChildren();
-  const postsContent = document.createElement('div');
-  elements.posts.append(postsContent);
-  postsContent.outerHTML = `<div class="card border-0">
-    <div class="card-body">
-      <h2 class="card-title h4">Посты</h2>
-    </div>
-    <ul class="list-group border-0 rounded-0 list-unstyled"></ul>
-  </div>`;
-  const ul = document.querySelector('.posts > div > ul');
+  const postsCard = buildCard('Посты');
+  const ul = postsCard.querySelector('ul');
+
   initialState.posts.forEach(({
     postId, title, link,
   }) => {
-    const li = document.createElement('li');
+    const li = createNewElement('li', [{ name: 'class', value: 'list-group-item d-flex justify-content-between align-items-start border-0 border-end-0' }]);
+    const linkAttributes = [{ name: 'class', value: 'fw-bold' }, { name: 'href', value: link }, { name: 'data-id', value: postId }, { name: 'target', value: '_blank' }, { name: 'rel', value: 'noopener noreferrer' }];
+    const a = createNewElement('a', linkAttributes, title);
+    const btnAttributes = [{ name: 'class', value: 'btn btn-outline-primary btn-sm' }, { name: 'type', value: 'button' }, { name: 'data-id', value: postId }, { name: 'data-bs-toggle', value: 'modal' }, { name: 'data-bs-target', value: '#modal' }];
+    const button = createNewElement('button', btnAttributes, i18nInstance.t('buttons'));
+    li.append(a, button);
     ul.append(li);
-    li.outerHTML = `<li class="list-group-item d-flex justify-content-between align-items-start border-0 border-end-0">
-      <a href=${link} class="fw-bold" data-id=${postId} target="_blank" rel="noopener noreferrer">${title}</a>
-      <button type="button" class="btn btn-outline-primary btn-sm" data-id=${postId} data-bs-toggle="modal" data-bs-target="#modal">${i18nInstance.t('buttons')}</button>
-    </li>`;
   });
+  elements.posts.append(postsCard);
 };
 
 const handleProcessModal = (value, initialState) => {
