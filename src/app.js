@@ -48,6 +48,9 @@ const isRssUrl = (url) => getRssData(url)
     }
     const text = response.data.contents;
     return text.includes('<rss') || text.includes('<feed');
+  })
+  .catch(() => {
+    throw new Error('network');
   });
 
 const initI18n = (defaultLanguage, i18nInstance) => i18nInstance
@@ -147,7 +150,7 @@ export default async () => {
       .catch((err) => {
         state.form.state = 'invalid';
 
-        if (typeof err.message === 'string' && err.message.includes('AxiosError')) {
+        if (typeof err.message === 'string' && err.message.includes('network')) {
           state.error = 'network';
         }
 
